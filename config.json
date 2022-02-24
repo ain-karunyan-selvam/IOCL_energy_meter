@@ -1,0 +1,48 @@
+{
+    "MODBUS" : 
+        {
+            "ENERGYMETER" :
+                    {
+                        "PORT" : "/dev/ttyUSB0",
+                        "SLAVE" : 2,
+                        "BAUDRATE" : 9600,
+                        "BYTESIZE" : 8,
+                        "PARITY" : "minimalmodbus.serial.PARITY_NONE",
+                        "STOPBITS": 1,
+                        "TIMEOUT" : 1,
+                        "DEBUG" : false,
+                        "MODE" : "minimalmodbus.MODE_RTU"
+
+                    },
+            "REGISTERS" :
+            {
+                "PARAMETERS" :["V_R","V_Y","V_B","C_R","C_Y","C_B","W_R","W_Y","W_B","VA_R","VA_Y","VA_B","VAR_R","VAR_Y","VAR_B","PF_R","PF_Y","PF_B"],
+                "ADDRESS" :  [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34]
+            }
+        },
+        "LOGS": {
+            "IOCLT": "/home/pi/ioclt/logs/energymeter/"
+    
+        },
+        "LOG_ROTATE": {
+            "MAXBYTES": 5242880
+        },
+        "RETENTIONS": {
+           "EM": 7,
+           "DURATION" : 60
+        },
+        "MQTT": {
+            "HOST": "13.235.99.227",
+            "PASSWORD": "@parinnosys123",
+            "PORT": 1883,
+            "QOS": 1,
+            "TOPIC_PREFIX": "AIN/IIOT/IOCLT/KARUNYAN",
+            "USERNAME": "ain-iocl-dev-usr"
+        },
+        "DATABASE": {
+            "FILEPATH": "/home/pi/ioclt/ioclt.db",
+            "TABLENAME": "ioclt_offline"
+        }
+        
+}  
+              
