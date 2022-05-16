@@ -3,8 +3,8 @@
         {
             "ENERGYMETER" :
                     {
-                        "PORT" : "/dev/ttyUSB0",
-                        "SLAVE" : 2,
+                        "PORT" : "/dev/ttyRS485B",
+                        "SLAVE" : 1			,
                         "BAUDRATE" : 9600,
                         "BYTESIZE" : 8,
                         "PARITY" : "minimalmodbus.serial.PARITY_NONE",
@@ -17,7 +17,8 @@
             "REGISTERS" :
             {
                 "PARAMETERS" :["V_R","V_Y","V_B","C_R","C_Y","C_B","W_R","W_Y","W_B","VA_R","VA_Y","VA_B","VAR_R","VAR_Y","VAR_B","PF_R","PF_Y","PF_B"],
-                "ADDRESS" :  [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34]
+                "ADDRESS" :  [0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34],
+		"SPERATE_PARAMETERS" :["V","I","W","VA","VAR","PF"]
             }
         },
         "LOGS": {
@@ -36,7 +37,7 @@
             "PASSWORD": "@parinnosys123",
             "PORT": 1883,
             "QOS": 1,
-            "TOPIC_PREFIX": "AIN/IIOT/IOCLT/KARUNYAN",
+            "TOPIC_PREFIX": ["AIN/IIOT/IOCLT/EM/LIGHTPOWPAN/L1RED","AIN/IIOT/IOCLT/EM/LIGHTPOWPAN/L2YELLOW","AIN/IIOT/IOCLT/EM/LIGHTPOWPAN/L3BLUE"],
             "USERNAME": "ain-iocl-dev-usr"
         },
         "DATABASE": {
