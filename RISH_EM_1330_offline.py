@@ -10,6 +10,7 @@ import os
 import datetime
 #import threading
 import sqlite3
+import sys
 
 with open('/home/pi/ioclt/config.json', 'r') as configFile:
 	CONFIG = json.load(configFile)
@@ -37,6 +38,7 @@ rs485.mode = minimalmodbus.MODE_RTU
 
 parameters = CONFIG['MODBUS']['REGISTERS']['PARAMETERS']
 address = CONFIG['MODBUS']['REGISTERS']['ADDRESS']
+sperate_parameters = CONFIG['MODBUS']['REGISTERS']['SPERATE_PARAMETERS']
 
 counter = 0
 
@@ -72,12 +74,13 @@ class rs485_em_data():
             Datapackage["ts"] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             for indx,A in enumerate(address):
                 Val = rs485.read_float(A, functioncode=4, number_of_registers=2)
-                Datapackage[parameters[indx]] = float(str(f'{Val :.2f}'))
+                Datapackage[parameters[indx]] = float(str(f'{Val :.3f}'))
                 time.sleep(.1)
             logging.info("Datapackage- {}".format(Datapackage))
             return Datapackage
         except Exception as e:
             logging.error(e)
+            sys.exit()
             return e
 
 
@@ -159,6 +162,15 @@ class database():
             logging.error("offline_data_publish error {}".format(e))
             return None
         
+def check_db_size(file_path):
+    file_size = os.stat(file_path)
+    if(CONFIG['RETENTIONS']['DB_SIZE'] <= file_size/1000):
+         os.remove(file_path)
+         logging.info('DB file restarted {}'.format(file_size))
+         os.system('sudo systemctl restart ioclt.service')
+         logging.info('service restarted')
+
+
 
     
 def main_function():
@@ -167,27 +179,62 @@ def main_function():
         flag = 0
         val = rs485_em_data(parameters,address)
         EM = val.rish1330_data()
-        mqtt_parameters = mqqt_connect(username_mqtt,password_mqtt,mqtt_broker,mqtt_port,Publish_Topic,mqtt_qos)
-        flag, client = mqtt_parameters.MQTT_Connect()
-        logging.info("client message- {}".format(flag))
+        mqtt_parameters = {}
+        client = {}
+        Datapackage = {}
+        for i in range(len(Publish_Topic)):
+            mqtt_parameters[i] = mqqt_connect(username_mqtt,password_mqtt,mqtt_broker,mqtt_port,Publish_Topic[i],mqtt_qos)
+            flag, client[i] = mqtt_parameters[i].MQTT_Connect()
+            logging.info("client message- {} ".format(flag))
         if flag == True:
-            EM["type"] = "live"
-            pub_message = mqtt_parameters.Publish_Data(client,json.dumps(EM).encode())
-            logging.info("publish message- {}".format(pub_message))
-            offline_data = offline.offline_data_publish(cursur)
-            logging.info("offline_data {}".format(offline_data))
+            #EM["type"] = "live"
+            logging.info("client message-11")
+            client_id = 0
+            for i in range(1,4):
+                indx = i
+                #val_dic = EM.values()
+                #value_list = list(val_dic)
+                Datapackage["ts"] = list(EM.values())[0]
+                for j in range(len(sperate_parameters)):
+                    #val_dic = EM.values()
+                    #value_list = list(val_dic)
+                    #Datapackage[sperate_parameters[j]] = value_list[indx]
+                    Datapackage[sperate_parameters[j]] = list(EM.values())[indx]
+                    indx = indx + 3
+                #Datapackage["type"] = "live"
+                logging.info("sperate data {}".format(Datapackage))
+                pub_message = mqtt_parameters[client_id].Publish_Data(client[client_id],json.dumps(Datapackage).encode())
+                #pub_message = mqtt_parameters.Publish_Data(client[client_id],json.dumps(Datapackage))
+                logging.info("publish message- {}".format(pub_message))
+                offline_data = offline.offline_data_publish(cursur)
+                logging.info("offline_data {}".format(offline_data))
+                client_id = client_id + 1
+                Datapackage = {}
             if offline_data != None:
                 length = len(offline_data)
                 if length != counter : 
                     val = "[]()'".join(offline_data[counter])
-                    pub_message = mqtt_parameters.Publish_Data(client,val)
-                    logging.info("publish offline message- {} {} {}".format(pub_message,counter,length))
-                    counter = counter + 1
+                    for i in range(1,4):
+                        indx = i
+                        #val_dic = val.values()
+                        #value_list = list(val_dic)
+                        Datapackage["ts"] = list(val.values())[0]
+                        for j in range(len(sperate_parameters)):
+                            #val_dic = EM.values()
+                            #value_list = list(val_dic)
+                            Datapackage[sperate_parameters[j]] = list(val.values())[indx]
+                            indx = indx + 3
+                        #Datapackage["type"] = "log"
+                        pub_message = mqtt_parameters[client_id].Publish_Data(client[client_id],Datapackage)
+                        logging.info("publish offline message- {} {} {}".format(pub_message,counter,length))
+                        counter = counter + 1
+                        client_id = client_id + 1
                 else :
                     logging.info("delete message {}".format(offline.delete_all_tasks(cursur,conn)))
                     #conn.close()
                     counter = 0
-            client.disconnect()
+            for i in range(len(Publish_Topic)):
+                client[i].disconnect()
         else :
             EM["type"] = "log"
             #data = offline.insert_value(cursur,conn,EM)
@@ -206,6 +253,7 @@ if __name__ == "__main__":
     while 1:
         main_function()
         time.sleep(CONFIG['RETENTIONS']['DURATION'])
+        #check_db_size(file_path)
 
 
 
